@@ -11,6 +11,7 @@ import json
 import os
 import time
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Callable
 
 from .ai_schemas import CLASSIFICATION_SCHEMA, EXTRACTION_SCHEMA, response_format
@@ -46,7 +47,7 @@ class AISettings:
         from dotenv import load_dotenv
 
         if os.getenv("CARGOCLARITY_DISABLE_DOTENV") != "1":
-            load_dotenv()
+            load_dotenv(dotenv_path=Path.cwd() / ".env", override=False)
         provider = os.getenv("AI_PROVIDER", "gemini")
         model = os.getenv("AI_MODEL", "gemini-3.8-flash")
         api_key = os.getenv("GEMINI_API_KEY") or os.getenv("AI_API_KEY") or os.getenv("OPENAI_API_KEY")
