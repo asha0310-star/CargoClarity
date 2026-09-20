@@ -50,7 +50,10 @@ class AISettings:
             load_dotenv(dotenv_path=Path.cwd() / ".env", override=False)
         provider = os.getenv("AI_PROVIDER", "gemini")
         model = os.getenv("AI_MODEL", "gemini-2.5-flash")
-        api_key = os.getenv("GEMINI_API_KEY") or os.getenv("AI_API_KEY") or os.getenv("OPENAI_API_KEY")
+        if provider.casefold() == "gemini":
+            api_key = os.getenv("GEMINI_API_KEY") or os.getenv("AI_API_KEY")
+        else:
+            api_key = os.getenv("AI_API_KEY") or os.getenv("OPENAI_API_KEY")
         api_base = os.getenv("AI_API_BASE") or os.getenv("OPENAI_API_BASE")
         if provider.casefold() == "gemini" and not api_base:
             api_base = GEMINI_OPENAI_BASE

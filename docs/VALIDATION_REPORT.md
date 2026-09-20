@@ -6,7 +6,7 @@
 
 ## Executive result
 
-CargoClarity processes all 520 participant email records without an unhandled failure and produces a submission object that exactly matches the participant `sample_submission.json` structure. The automated suite contains 38 passing tests. The seven self-authored deterministic fixtures all pass.
+CargoClarity processes all 520 participant email records without an unhandled failure and produces a submission object that exactly matches the participant `sample_submission.json` structure. The automated suite contains 39 passing tests. The seven self-authored deterministic fixtures all pass.
 
 No organizer answer key was opened, imported, copied, or used. Therefore this report makes no unsupported claim about private-label accuracy. It reports structural validity, processing coverage, deterministic regression behavior, and observed output distribution.
 
@@ -14,7 +14,7 @@ No organizer answer key was opened, imported, copied, or used. Therefore this re
 
 | Check | Result |
 |---|---:|
-| Automated tests | 38 passed |
+| Automated tests | 39 passed |
 | Deterministic fixtures | 7/7 passed |
 | Participant emails processed | 520/520 |
 | Unhandled full-dataset failures | 0 |
@@ -71,4 +71,4 @@ python tools/run_phase2_smoke.py
 python tools/generate_submission.py
 ```
 
-The expected terminal indicators are `38 passed`, `7/7 fixtures passed`, `failures=[]`, and a validation report containing `"valid": true` and `"record_count": 520`.
+The expected terminal indicators are `39 passed`, `7/7 fixtures passed`, `failures=[]`, and a validation report containing `"valid": true` and `"record_count": 520`.

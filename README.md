@@ -39,7 +39,7 @@ The root redirects to the dashboard at `/dashboard/`. The API documentation is a
 The current release gate is:
 
 ```text
-38 passing tests
+39 passing tests
 7/7 regression fixtures
 520/520 valid submission records
 0 full-dataset processing failures

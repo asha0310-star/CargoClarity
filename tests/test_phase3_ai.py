@@ -134,6 +134,20 @@ def test_gemini_environment_defaults_are_free_tier_configuration(monkeypatch):
     assert settings.enabled is True
 
 
+def test_gemini_does_not_reuse_an_unrelated_openai_key(monkeypatch):
+    monkeypatch.setenv("CARGOCLARITY_DISABLE_DOTENV", "1")
+    monkeypatch.setenv("AI_PROVIDER", "gemini")
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.delenv("AI_API_KEY", raising=False)
+    monkeypatch.setenv("OPENAI_API_KEY", "unrelated-openai-key")
+
+    settings = AISettings.from_env()
+
+    assert settings.provider == "gemini"
+    assert settings.api_key is None
+    assert settings.enabled is False
+
+
 def test_pipeline_keeps_deterministic_result_when_ai_response_is_malformed(tmp_path):
     record = {
         "email_id": "fixture_email",

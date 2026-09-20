@@ -14,7 +14,7 @@ python tools/run_phase2_smoke.py
 python tools/generate_submission.py
 ```
 
-The release gate is 38 passing tests, 7/7 fixtures, no full-dataset failures, and 520 valid submission records.
+The release gate is 39 passing tests, 7/7 fixtures, no full-dataset failures, and 520 valid submission records.
 
 ## 2. Start the product
 
