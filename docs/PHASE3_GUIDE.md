@@ -204,6 +204,8 @@ The exact category is not a scoring result. The important checks are that the ca
 
 If the provider rejects the request, times out, or returns malformed JSON, the command prints an error and call metadata. That is a safe failure; it must not be treated as a comparison decision.
 
+If the error says `HTTP 402` and `prepayment credits are depleted`, the API key is valid but its Google project is on a paid/prepaid tier with no remaining credits. Do not add money if you want a no-cost setup. Create or select a separate project shown as **Free Tier** in AI Studio, create a new key for that project, and replace only `GEMINI_API_KEY` in the local `.env`. Google documents that API keys inherit their project’s billing status and that unlinking billing can return a project to Free Tier [6].
+
 ## Step 9 — Run the normal pipeline with AI enabled
 
 Run this low-confidence sample:

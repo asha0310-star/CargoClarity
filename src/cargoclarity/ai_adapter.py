@@ -167,7 +167,10 @@ class AIAdapter:
             raise
         except Exception as exc:
             self.calls.append(self._record(operation, started, "FAILED", type(exc).__name__))
-            raise AIAdapterError(f"AI {operation} failed safely: {type(exc).__name__}") from exc
+            status = getattr(exc, "status_code", None)
+            detail = str(exc).replace(self.settings.api_key or "", "[REDACTED]")[:400]
+            suffix = f" HTTP {status}" if status else ""
+            raise AIAdapterError(f"AI {operation} failed safely{suffix}: {detail}") from exc
 
     def _record(self, operation: str, started: float, validation_status: str, error_code: str | None = None):
         return AICallRecord(
