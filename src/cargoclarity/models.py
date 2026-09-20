@@ -52,6 +52,7 @@ class ClassificationResult:
     confidence: float
     signals: list[str]
     decided_by: str = "RULE"
+    explanation: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

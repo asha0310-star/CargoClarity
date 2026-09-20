@@ -275,7 +275,7 @@ Phase 2 approved. Move to Phase 3.
 
 ## What is deliberately not included
 
-Phase 2 does not add cloud AI extraction, FastAPI routes, Streamlit screens, persistence, human-review actions, audit history, export endpoints, or deployment. Phase 3 will add one schema-validated AI adapter while preserving this deterministic core as the decision authority.
+Phase 2 does not add cloud AI extraction, FastAPI routes, Streamlit screens, persistence, human-review actions, audit history, export endpoints, or deployment. Phase 3 adds the schema-validated AI adapter while preserving this deterministic core as the decision authority.
 
 ## References
 

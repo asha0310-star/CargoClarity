@@ -6,7 +6,7 @@ CargoClarity is an explainable shipping-document verification MVP. It classifies
 
 ## Current status
 
-**Phase 0** established the repository and scope. **Phase 1** inspected the participant dataset and created seven local regression fixtures. **Phase 2** implements the deterministic core and is ready for review. The API, dashboard, persistence layer, human-review workflow, cloud AI adapter, and deployment are later phases.
+**Phase 0** established the repository and scope. **Phase 1** inspected the participant dataset and created seven local regression fixtures. **Phase 2** implements the deterministic core. **Phase 3** adds an optional schema-validated cloud AI adapter with deterministic fallback. The API, dashboard, persistence layer, human-review workflow, and deployment are later phases.
 
 ## Phase 2 capabilities
 
@@ -25,7 +25,7 @@ pytest
 cargoclarity fixtures
 ```
 
-Expected verification results are **16 passing tests** and **7/7 passing fixtures**.
+Expected verification results are **22 passing tests** and **7/7 passing fixtures**.
 
 Process one participant email with:
 
@@ -41,11 +41,20 @@ python tools/run_phase2_smoke.py
 
 See [Phase 2 review and operation guide](docs/PHASE2_GUIDE.md) for exact commands, expected results, interpretation, and approval steps.
 
+See [Phase 3 review and operation guide](docs/PHASE3_GUIDE.md) for optional AI configuration, mocked validation, live-call instructions, fallback behavior, and approval steps.
+
+Check the optional AI configuration without sending a request when no key is configured:
+
+```bash
+cargoclarity ai-check
+```
+
 ## Repository layout
 
 ```text
-src/cargoclarity/              Deterministic Phase 2 package
-tests/test_phase2_core.py      Automated core tests
+src/cargoclarity/              Deterministic core and optional Phase 3 AI adapter
+tests/test_phase2_core.py      Automated deterministic-core tests
+tests/test_phase3_ai.py        Mocked schema and fallback tests
 tests/fixtures/                Seven self-authored regression cases
 tools/                         Dataset and smoke-test utilities
 docs/                          Product specifications and phase guides
