@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: cargoclarity
+    runtime: docker
+    plan: free
+    autoDeploy: false
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: API_HOST
+        value: 0.0.0.0
+      - key: API_STATE_PATH
+        value: /tmp/cargoclarity/api_state.json
+      - key: DATA_SOURCE
+        value: /app/data/participant/sdoc-hackathon-bundle
+      - key: DASHBOARD_DIR
+        value: /app/dashboard
+      - key: CARGOCLARITY_DISABLE_DOTENV
+        value: "1"
+      - key: API_MAX_BODY_BYTES
+        value: "1048576"
+      - key: API_MUTATION_RATE_LIMIT
+        value: "60"
+      - key: AI_PROVIDER
+        value: gemini
+      - key: AI_API_BASE
+        value: https://generativelanguage.googleapis.com/v1beta/openai/
+      - key: AI_MODEL
+        value: gemini-2.5-flash
+      - key: AI_TIMEOUT_SECONDS
+        value: "30"
+      - key: GEMINI_API_KEY
+        sync: false

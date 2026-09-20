@@ -33,6 +33,13 @@ class ProcessRequest(BaseModel):
     use_ai: bool = False
 
 
+class BatchProcessRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    force: bool = False
+    use_ai: bool = False
+
+
 class ReviewRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -40,6 +47,7 @@ class ReviewRequest(BaseModel):
     corrected_status: Literal["OK", "MISMATCH", "NEEDS_REVIEW"]
     corrected_fields: list[dict[str, Any]] = Field(default_factory=list, max_length=20)
     reason: str = Field(min_length=1, max_length=2000)
+    reviewer_name: str = Field(default="Demo Reviewer", min_length=2, max_length=120)
 
 
 class ErrorBody(BaseModel):

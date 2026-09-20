@@ -129,7 +129,7 @@ def test_gemini_environment_defaults_are_free_tier_configuration(monkeypatch):
     settings = AISettings.from_env()
 
     assert settings.provider == "gemini"
-    assert settings.model == "gemini-3.8-flash"
+    assert settings.model == "gemini-2.5-flash"
     assert settings.api_base == "https://generativelanguage.googleapis.com/v1beta/openai/"
     assert settings.enabled is True
 

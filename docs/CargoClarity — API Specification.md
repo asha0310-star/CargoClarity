@@ -103,6 +103,14 @@ Response:
 
 Returns progress, stage, error information, and the resulting processing run when complete.
 
+### `POST /api/v1/batches/process`
+
+Starts a bounded background verification run for every currently unprocessed email. The body accepts `force` and `use_ai`; AI remains opt-in and deterministic fallback remains active. The response contains `batch_id`, `status`, and `total`.
+
+### `GET /api/v1/batches/{batch_id}`
+
+Returns batch status, stage, processed count, failure count, total, percentage, and timestamps. The dashboard uses this endpoint to display progress without blocking the interface.
+
 ### `GET /api/v1/emails/{email_id}/comparison`
 
 Returns the full explainable comparison.
@@ -153,6 +161,18 @@ Request:
 ```
 
 Response returns the updated final status and audit event ID.
+
+### `GET /api/v1/emails/{email_id}/reviews`
+
+Returns the append-only human decision history. Every item includes reviewer, timestamp, decision, machine status, prior effective status, new effective status, corrected fields, and rationale.
+
+### `GET /api/v1/emails/{email_id}/audit`
+
+Returns processing and review events for one email in reverse chronological order.
+
+### `GET /api/v1/audit`
+
+Returns the workspace audit stream for the operations workbench. Review events include actor, prior state, new state, and reason; machine events remain separate.
 
 ### `POST /api/v1/emails/{email_id}/retry`
 

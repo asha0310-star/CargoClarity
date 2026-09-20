@@ -35,7 +35,7 @@ class AISchemaError(AIAdapterError):
 @dataclass
 class AISettings:
     provider: str = "gemini"
-    model: str = "gemini-3.8-flash"
+    model: str = "gemini-2.5-flash"
     api_key: str | None = None
     api_base: str | None = None
     timeout_seconds: float = 30.0
@@ -49,7 +49,7 @@ class AISettings:
         if os.getenv("CARGOCLARITY_DISABLE_DOTENV") != "1":
             load_dotenv(dotenv_path=Path.cwd() / ".env", override=False)
         provider = os.getenv("AI_PROVIDER", "gemini")
-        model = os.getenv("AI_MODEL", "gemini-3.8-flash")
+        model = os.getenv("AI_MODEL", "gemini-2.5-flash")
         api_key = os.getenv("GEMINI_API_KEY") or os.getenv("AI_API_KEY") or os.getenv("OPENAI_API_KEY")
         api_base = os.getenv("AI_API_BASE") or os.getenv("OPENAI_API_BASE")
         if provider.casefold() == "gemini" and not api_base:

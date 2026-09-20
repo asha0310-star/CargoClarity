@@ -40,10 +40,27 @@ def test_health_and_empty_list(client):
     health = client.get("/api/v1/health")
     assert health.status_code == 200
     assert health.json()["status"] == "ok"
+    assert health.json()["version"] == "1.0.0"
+    assert health.headers["x-content-type-options"] == "nosniff"
+    assert health.headers["x-frame-options"] == "DENY"
+    assert health.headers["x-request-id"].startswith("req_")
 
     listing = client.get("/api/v1/emails")
     assert listing.status_code == 200
     assert listing.json() == {"items": [], "page": 1, "page_size": 25, "total": 0}
+
+
+def test_root_redirects_to_product_dashboard(client):
+    response = client.get("/", follow_redirects=False)
+    assert response.status_code == 307
+    assert response.headers["location"] == "/dashboard/"
+
+
+def test_oversized_request_is_rejected_before_parsing(client, monkeypatch):
+    monkeypatch.setenv("API_MAX_BODY_BYTES", "10")
+    response = client.post("/api/v1/emails/ingest", content=b'{"emails": []}')
+    assert response.status_code == 413
+    assert response.json()["error"]["code"] == "PAYLOAD_TOO_LARGE"
 
 
 def test_end_to_end_ingest_process_comparison_preview_review_retry_export(client):
@@ -91,6 +108,21 @@ def test_end_to_end_ingest_process_comparison_preview_review_retry_export(client
     )
     assert review.status_code == 200
     assert review.json()["decision"] == "CONFIRMED"
+    assert review.json()["reviewer_name"] == "Demo Reviewer"
+    assert review.json()["old_effective_status"] == "OK"
+    assert review.json()["new_effective_status"] == "OK"
+    assert review.json()["audit_event_id"]
+
+    history = client.get("/api/v1/emails/email_001/reviews")
+    assert history.status_code == 200
+    assert history.json()["items"][0]["reason"].startswith("Reviewed the evidence")
+
+    audit = client.get("/api/v1/emails/email_001/audit")
+    assert audit.status_code == 200
+    review_event = next(item for item in audit.json()["items"] if item["event_type"] == "REVIEW_RECORDED")
+    assert review_event["actor_name"] == "Demo Reviewer"
+    assert review_event["prior_state"]["status"] == "OK"
+    assert review_event["new_state"]["status"] == "OK"
 
     retry = client.post("/api/v1/emails/email_001/retry")
     assert retry.status_code == 202
@@ -158,6 +190,43 @@ def test_export_rejects_unsupported_format(client):
     assert response.json()["error"]["code"] == "UNSUPPORTED_FORMAT"
 
 
+def test_override_requires_specific_reason_and_preserves_machine_output(client):
+    client.post("/api/v1/emails/ingest", json=_email_payload())
+    rejected = client.post(
+        "/api/v1/emails/email_001/review",
+        json={"decision": "OVERRIDDEN", "corrected_status": "MISMATCH", "reason": "wrong"},
+    )
+    assert rejected.status_code == 409
+
+    accepted = client.post(
+        "/api/v1/emails/email_001/review",
+        json={
+            "decision": "OVERRIDDEN",
+            "corrected_status": "MISMATCH",
+            "reason": "The visible BL source value differs from the SI reference.",
+            "reviewer_name": "Operations Reviewer",
+        },
+    )
+    assert accepted.status_code == 200
+    comparison = client.get("/api/v1/emails/email_001/comparison").json()
+    assert comparison["machine_status"] == "OK"
+    assert comparison["status"] == "MISMATCH"
+
+
+def test_batch_processes_all_unprocessed_records(client):
+    client.post("/api/v1/emails/ingest", json={**_email_payload("email_001"), "process": False})
+    client.post("/api/v1/emails/ingest", json={**_email_payload("email_016"), "process": False})
+    accepted = client.post("/api/v1/batches/process", json={"force": False, "use_ai": False})
+    assert accepted.status_code == 202
+    assert accepted.json()["total"] == 2
+    batch = client.get(f"/api/v1/batches/{accepted.json()['batch_id']}")
+    assert batch.status_code == 200
+    assert batch.json()["status"] == "SUCCEEDED"
+    assert batch.json()["processed"] == 2
+    assert batch.json()["failed"] == 0
+    assert client.get("/api/v1/reports/summary").json()["processed_emails"] == 2
+
+
 def test_phase5_dashboard_is_served_same_origin(client):
     page = client.get("/dashboard/")
     assert page.status_code == 200
@@ -169,6 +238,7 @@ def test_phase5_dashboard_is_served_same_origin(client):
     styles = client.get("/dashboard/styles.css")
     assert script.status_code == 200
     assert styles.status_code == 200
-    assert "Prepare demo cases" in script.text
-    assert "View evidence" in script.text
-    assert ".status-pill.review" in styles.text
+    assert "verifyInbox" in script.text
+    assert "openFieldEvidence" in script.text
+    assert "loadAudit" in script.text
+    assert ".review-workbench" in styles.text

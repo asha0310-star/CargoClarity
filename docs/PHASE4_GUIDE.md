@@ -170,7 +170,7 @@ You should see an object containing:
 ```json
 {
   "status": "ok",
-  "version": "0.4.0",
+  "version": "1.0.0",
   "dependencies": {
     "data_source": "ok",
     "runtime_store": "ok",

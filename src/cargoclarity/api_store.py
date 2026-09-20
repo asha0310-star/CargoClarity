@@ -50,6 +50,7 @@ class ApiStore:
         self.state_path = Path(state_path).resolve() if state_path else None
         self.records: dict[str, dict] = {}
         self.jobs: dict[str, dict] = {}
+        self.batch_jobs: dict[str, dict] = {}
         self.runs: dict[str, list[dict]] = {}
         self.reviews: dict[str, list[dict]] = {}
         self.audit_events: list[dict] = []
@@ -66,6 +67,7 @@ class ApiStore:
         except (OSError, json.JSONDecodeError):
             return
         self.jobs = payload.get("jobs", {})
+        self.batch_jobs = payload.get("batch_jobs", {})
         self.runs = payload.get("runs", {})
         self.reviews = payload.get("reviews", {})
         self.audit_events = payload.get("audit_events", [])
@@ -79,6 +81,7 @@ class ApiStore:
         payload = {
             "records": self.records,
             "jobs": self.jobs,
+            "batch_jobs": self.batch_jobs,
             "runs": self.runs,
             "reviews": self.reviews,
             "audit_events": self.audit_events,
@@ -144,6 +147,7 @@ class ApiStore:
         latest = self.latest_run(email_id)
         comparison = latest.get("result", {}).get("comparison") if latest else None
         review = self.latest_review(email_id)
+        machine_status = comparison.get("status") if comparison else None
         latest_view = None
         if latest:
             latest_view = {
@@ -166,8 +170,11 @@ class ApiStore:
             "latest_run": latest_view,
             "category": latest.get("result", {}).get("category") if latest else None,
             "status": self.final_status(email_id),
+            "machine_status": machine_status,
+            "effective_status": self.final_status(email_id),
             "needs_review": self.final_status(email_id) == "NEEDS_REVIEW",
             "review": review,
+            "review_count": len(self.reviews.get(email_id) or []),
             "updated_at": latest.get("completed_at") if latest else None,
         }
 
@@ -191,7 +198,9 @@ class ApiStore:
                 "sender": view["sender"],
                 "category": view["category"],
                 "status": view["status"],
+                "machine_status": view["machine_status"],
                 "needs_review": view["needs_review"],
+                "review_count": view["review_count"],
                 "updated_at": view["updated_at"],
             })
         return views
@@ -280,6 +289,81 @@ class ApiStore:
             raise NotFoundError(f"Job {job_id} was not found")
         return self._job_view(job)
 
+    def create_batch_job(self, force: bool = False, use_ai: bool = False) -> dict:
+        email_ids = [email_id for email_id in sorted(self.records) if force or not self.latest_run(email_id)]
+        batch_id = self._new_id()
+        created_at = utc_now()
+        batch = {
+            "id": batch_id,
+            "status": "QUEUED",
+            "stage": "queued",
+            "progress": 0,
+            "total": len(email_ids),
+            "processed": 0,
+            "failed": 0,
+            "force": force,
+            "use_ai": use_ai,
+            "email_ids": email_ids,
+            "created_at": created_at,
+            "started_at": None,
+            "completed_at": None,
+        }
+        with self.lock:
+            self.batch_jobs[batch_id] = batch
+            self.audit_events.append({"id": self._new_id(), "event_type": "BATCH_QUEUED", "actor_type": "SYSTEM", "batch_id": batch_id, "created_at": created_at, "new_state": {"total": len(email_ids)}})
+            self._persist()
+        return dict(batch)
+
+    def run_batch(self, batch_id: str) -> dict:
+        batch = self.batch_jobs.get(batch_id)
+        if not batch:
+            raise NotFoundError(f"Batch {batch_id} was not found")
+        started_at = utc_now()
+        with self.lock:
+            batch.update({"status": "RUNNING", "stage": "processing", "started_at": started_at})
+            self._persist()
+        total = len(batch["email_ids"])
+        adapter = AIAdapter()
+        for index, email_id in enumerate(batch["email_ids"], start=1):
+            try:
+                result = process_email_record(self._record(email_id), self.data_root, use_ai=bool(batch["use_ai"]), ai_adapter=adapter)
+                completed_at = utc_now()
+                calls = result.get("ai_processing", {}).get("calls") or []
+                run = {
+                    "id": self._new_id(),
+                    "email_id": email_id,
+                    "status": "SUCCEEDED",
+                    "category": result.get("category"),
+                    "completed_at": completed_at,
+                    "provider": calls[-1].get("provider") if calls else None,
+                    "model": calls[-1].get("model") if calls else None,
+                    "result": result,
+                }
+                with self.lock:
+                    self.runs.setdefault(email_id, []).append(run)
+                    self.audit_events.append({"id": self._new_id(), "event_type": "PROCESSING_SUCCEEDED", "actor_type": "SYSTEM", "email_id": email_id, "batch_id": batch_id, "created_at": completed_at})
+            except Exception as exc:
+                with self.lock:
+                    batch["failed"] += 1
+                    self.audit_events.append({"id": self._new_id(), "event_type": "PROCESSING_FAILED", "actor_type": "SYSTEM", "email_id": email_id, "batch_id": batch_id, "created_at": utc_now(), "reason": f"{type(exc).__name__}: {str(exc)[:300]}"})
+            with self.lock:
+                batch["processed"] = index
+                batch["progress"] = 100 if total == 0 else round(index / total * 100)
+                if index == total or index % 25 == 0:
+                    self._persist()
+        completed_at = utc_now()
+        with self.lock:
+            batch.update({"status": "SUCCEEDED" if batch["failed"] == 0 else "COMPLETED_WITH_ERRORS", "stage": "complete", "progress": 100, "completed_at": completed_at})
+            self.audit_events.append({"id": self._new_id(), "event_type": "BATCH_COMPLETED", "actor_type": "SYSTEM", "batch_id": batch_id, "created_at": completed_at, "new_state": {"processed": batch["processed"], "failed": batch["failed"]}})
+            self._persist()
+        return dict(batch)
+
+    def get_batch(self, batch_id: str) -> dict:
+        batch = self.batch_jobs.get(batch_id)
+        if not batch:
+            raise NotFoundError(f"Batch {batch_id} was not found")
+        return {key: value for key, value in batch.items() if key != "email_ids"}
+
     def latest_run(self, email_id: str) -> dict | None:
         runs = self.runs.get(email_id) or []
         return runs[-1] if runs else None
@@ -293,7 +377,13 @@ class ApiStore:
         if review and review.get("corrected_status"):
             return review["corrected_status"]
         latest = self.latest_run(email_id)
-        return latest.get("result", {}).get("comparison", {}).get("status") if latest else None
+        if not latest:
+            return None
+        result = latest.get("result") or {}
+        comparison = result.get("comparison")
+        if comparison is not None:
+            return comparison.get("status")
+        return "OK" if result.get("category") else None
 
     def comparison(self, email_id: str) -> dict:
         run = self.latest_run(email_id)
@@ -343,24 +433,63 @@ class ApiStore:
             }
         raise NotFoundError(f"Attachment {attachment_id} was not found")
 
-    def add_review(self, email_id: str, decision: str, corrected_status: str, corrected_fields: list[dict], reason: str) -> dict:
+    def add_review(self, email_id: str, decision: str, corrected_status: str, corrected_fields: list[dict], reason: str, reviewer_name: str = "Demo Reviewer") -> dict:
         self._record(email_id)
-        if not self.latest_run(email_id):
+        latest_run = self.latest_run(email_id)
+        if not latest_run:
             raise StoreError("Process the email before submitting a review")
+        machine_status = (latest_run.get("result", {}).get("comparison") or {}).get("status")
+        old_effective_status = self.final_status(email_id)
+        clean_reason = reason.strip()
+        if decision == "OVERRIDDEN" and len(clean_reason) < 12:
+            raise StoreError("An override requires a specific reason of at least 12 characters")
+        if decision == "CONFIRMED" and machine_status and corrected_status != machine_status:
+            raise StoreError("A confirmed decision must keep the machine status; use OVERRIDDEN to change it")
+        if decision == "UNRESOLVED" and corrected_status != "NEEDS_REVIEW":
+            raise StoreError("An unresolved decision must keep the case in NEEDS_REVIEW")
+        created_at = utc_now()
         review = {
             "id": self._new_id(),
             "email_id": email_id,
+            "processing_run_id": latest_run["id"],
+            "reviewer_name": reviewer_name.strip(),
             "decision": decision,
             "corrected_status": corrected_status,
             "corrected_fields": corrected_fields,
-            "reason": reason,
-            "created_at": utc_now(),
+            "reason": clean_reason,
+            "machine_status": machine_status,
+            "old_effective_status": old_effective_status,
+            "new_effective_status": corrected_status,
+            "created_at": created_at,
+        }
+        audit_event = {
+            "id": self._new_id(),
+            "event_type": "REVIEW_RECORDED",
+            "actor_type": "USER",
+            "actor_name": review["reviewer_name"],
+            "email_id": email_id,
+            "review_id": review["id"],
+            "created_at": created_at,
+            "prior_state": {"status": old_effective_status, "machine_status": machine_status},
+            "new_state": {"status": corrected_status, "decision": decision, "corrected_fields": corrected_fields},
+            "reason": clean_reason,
         }
         with self.lock:
             self.reviews.setdefault(email_id, []).append(review)
-            self.audit_events.append({"id": self._new_id(), "event_type": "REVIEW_RECORDED", "email_id": email_id, "review_id": review["id"], "created_at": review["created_at"]})
+            self.audit_events.append(audit_event)
             self._persist()
-        return review
+        return {**review, "audit_event_id": audit_event["id"]}
+
+    def audit_log(self, email_id: str | None = None, limit: int = 100) -> list[dict]:
+        if email_id is not None:
+            self._record(email_id)
+        events = [event for event in self.audit_events if email_id is None or event.get("email_id") == email_id]
+        events.sort(key=lambda event: event.get("created_at") or "", reverse=True)
+        return events[:limit]
+
+    def review_history(self, email_id: str) -> list[dict]:
+        self._record(email_id)
+        return list(reversed(self.reviews.get(email_id) or []))
 
     def summary(self) -> dict:
         by_category: dict[str, int] = {}
@@ -377,7 +506,7 @@ class ApiStore:
                 failed += 1
             result = run.get("result") or {}
             category = result.get("category")
-            status = result.get("comparison", {}).get("status") if result.get("comparison") else None
+            status = self.final_status(email_id)
             reason = result.get("comparison", {}).get("review_reason") if result.get("comparison") else None
             if category:
                 by_category[category] = by_category.get(category, 0) + 1
@@ -393,6 +522,7 @@ class ApiStore:
             "by_status": by_status,
             "by_review_reason": by_review_reason,
             "reviews_recorded": sum(len(items) for items in self.reviews.values()),
+            "audit_events": len(self.audit_events),
         }
 
     def export(self) -> dict:
@@ -416,7 +546,7 @@ class ApiStore:
         ai = AIAdapter()
         return {
             "status": "ok",
-            "version": "0.4.0",
+            "version": "1.0.0",
             "dependencies": {
                 "data_source": "ok" if self.data_root.exists() else "degraded",
                 "runtime_store": "ok",

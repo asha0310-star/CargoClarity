@@ -6,7 +6,7 @@ Phase 3 adds one optional cloud-AI adapter behind a strict interface. The adapte
 
 The provider response must be JSON that matches a strict schema. Malformed JSON, unsupported categories, missing required properties, invalid confidence values, or missing evidence are rejected. When the provider is unavailable or its response is rejected, the Phase 2 deterministic path continues and the output records that fallback was active.
 
-The selected provider is Google Gemini through its OpenAI-compatible endpoint. The default model is `gemini-3.8-flash`, which Google currently lists with Free Tier input and output pricing [5]. Free-tier availability and rate limits are project- and model-specific [6][9], so verify the active tier in Google AI Studio before making requests. The project uses strict JSON output plus application-side validation.
+The selected cloud provider is Google Gemini through its OpenAI-compatible endpoint. The reference model is `gemini-2.5-flash`. Free-tier availability and rate limits are project- and model-specific, so verify the active tier in Google AI Studio before making requests. The project uses strict JSON output plus application-side validation. Local Ollama remains the no-API-charge development option.
 
 ## What changed
 
@@ -141,7 +141,7 @@ Replace only the empty value after `GEMINI_API_KEY=` with your key; do not inclu
 
 ```bash
 AI_PROVIDER=gemini
-AI_MODEL=gemini-3.8-flash
+AI_MODEL=gemini-2.5-flash
 AI_API_BASE=https://generativelanguage.googleapis.com/v1beta/openai/
 GEMINI_API_KEY=PASTE_YOUR_GEMINI_KEY_HERE
 ```
@@ -193,7 +193,7 @@ A successful response should contain:
     {
       "operation": "classification",
       "provider": "gemini",
-      "model": "gemini-3.8-flash",
+      "model": "gemini-2.5-flash",
       "validation_status": "VALIDATED"
     }
   ]
