@@ -110,6 +110,8 @@ docker run --rm -p 8000:8000 -e PORT=8000 cargoclarity:1.0.0
 | Human review and audit | [Phase 6](docs/PHASE6_GUIDE.md) |
 | Submission validation | [Phase 7](docs/PHASE7_GUIDE.md) |
 | Deployment and reliability | [Phase 8](docs/PHASE8_GUIDE.md) |
+| Final operating walkthrough | [CargoClarity 1.0 guide](docs/FINAL_PRODUCT_GUIDE.md) |
+| Public release evidence | [Browser QA report](docs/PUBLIC_QA_REPORT.md) |
 
 ## Repository layout
 
