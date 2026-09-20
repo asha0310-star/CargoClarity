@@ -12,6 +12,7 @@ venv/
 !.env.example
 
 # Runtime output
+.runtime/
 *.db
 *.sqlite
 *.sqlite3

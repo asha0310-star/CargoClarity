@@ -312,7 +312,7 @@ Confirm these design rules in the source:
 
 Approve this phase only when:
 
-- `pytest` reports 23 passing tests.
+- `pytest` reports 24 passing tests.
 - `cargoclarity fixtures` reports 7/7 passing fixtures.
 - The no-key fallback check succeeds.
 - `cargoclarity ai-check` behaves as expected for your configured or unconfigured environment.
