@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import re
 import sys
-from collections import Counter, defaultdict
+from collections import Counter
 from pathlib import Path
 
 
@@ -22,7 +22,7 @@ def attachment_extension(path: str) -> str:
 
 
 def main() -> int:
-    root = Path(sys.argv[1] if len(sys.argv) > 1 else "data/participant")
+    root = Path(sys.argv[1] if len(sys.argv) > 1 else "data/participant/sdoc-hackathon-bundle")
     records = load_records(root)
     print(f"records={len(records)}")
 

@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cargoclarity"
+version = "0.2.0"
+description = "Deterministic core for explainable SI/BL document verification"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "openpyxl>=3.1,<4",
+  "pypdf>=5,<6",
+  "python-docx>=1.1,<2",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8,<9"]
+
+[project.scripts]
+cargoclarity = "cargoclarity.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+pythonpath = ["src"]
+testpaths = ["tests"]

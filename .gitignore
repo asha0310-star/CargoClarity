@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+.venv/
+venv/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Runtime output
+*.db
+*.sqlite
+*.sqlite3
+submission.json
+reports/
+logs/
+deliverables/
+
+# OS and editor files
+.DS_Store
+.idea/
+.vscode/
+
+# Organizer-only materials must never be committed
+ground_truth.json
+**/ground_truth.json
+score_cli.py
+**/score_cli.py
+organizer/
+**/organizer/
+answer_key*
+**/answer_key*

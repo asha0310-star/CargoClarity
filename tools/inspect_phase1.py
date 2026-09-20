@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import re
 import sys
-import zipfile
 from pathlib import Path
 
 
@@ -55,7 +54,7 @@ def inspect_pdf(path: Path):
 
 
 def main():
-    root = Path(sys.argv[1] if len(sys.argv) > 1 else "data/participant")
+    root = Path(sys.argv[1] if len(sys.argv) > 1 else "data/participant/sdoc-hackathon-bundle")
     records = load(root)
     by_id = {record["email_id"]: record for record in records}
 
