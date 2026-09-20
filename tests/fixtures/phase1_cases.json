@@ -1,0 +1,170 @@
+{
+  "description": "Self-authored deterministic-core fixtures for CargoClarity Phase 2. These are not organizer answer labels.",
+  "canonical_fields": [
+    "shipper",
+    "consignee",
+    "notify_party",
+    "port_of_loading",
+    "port_of_discharge",
+    "container_count",
+    "gross_weight_kg"
+  ],
+  "cases": [
+    {
+      "id": "clean_match",
+      "documents": {
+        "si": {
+          "filename": "fixture_match_SI.txt",
+          "format": "txt",
+          "readability_status": "READABLE",
+          "text": "SHIPPING INSTRUCTION\nShipper: Alpha Paper Trading Ltd.\nConsignee: Beta Office Supplies LLC\nNotify: Beta Office Supplies LLC\nPort of Loading (POL): Shanghai, China\nPOD: Melbourne, Australia\nTotal Containers: 6 x 40'HC\nGross Wt (kgs): 131,058 KG"
+        },
+        "bl": {
+          "filename": "fixture_match_BL.txt",
+          "format": "txt",
+          "readability_status": "READABLE",
+          "text": "BILL OF LADING (DRAFT)\nSHIPPER: ALPHA PAPER TRADING\nTo the Order of: BETA OFFICE SUPPLIES\nNotify Party: BETA OFFICE SUPPLIES\nLoad Port: PORT OF SHANGHAI\nPort of Discharge: MELBOURNE, AUSTRALIA\nContainer Count: 6 x 40'HC\nGross Weight (KG): 131058"
+        }
+      },
+      "expected": {
+        "status": "OK",
+        "review_reason": null,
+        "defect_fields": [],
+        "has_defect": false
+      }
+    },
+    {
+      "id": "one_field_mismatch",
+      "documents": {
+        "si": {
+          "filename": "fixture_one_mismatch_SI.txt",
+          "format": "txt",
+          "readability_status": "READABLE",
+          "text": "SHIPPING INSTRUCTION\nShipper: Alpha Paper Trading\nConsignee: Beta Office Supplies\nNotify: Beta Office Supplies\nPOL: Shanghai\nPOD: Melbourne\nContainer Count: 6\nGross Weight (KG): 131058"
+        },
+        "bl": {
+          "filename": "fixture_one_mismatch_BL.txt",
+          "format": "txt",
+          "readability_status": "READABLE",
+          "text": "BILL OF LADING (DRAFT)\nShipper: Alpha Paper Trading\nConsignee: Gamma Office Supplies\nNotify Party: Beta Office Supplies\nPort of Loading: Shanghai\nPort of Discharge: Melbourne\nTotal Containers: 6\nGross Wt (kgs): 131058"
+        }
+      },
+      "expected": {
+        "status": "MISMATCH",
+        "review_reason": null,
+        "defect_fields": ["consignee"],
+        "has_defect": true
+      }
+    },
+    {
+      "id": "multi_field_mismatch",
+      "documents": {
+        "si": {
+          "filename": "fixture_multi_mismatch_SI.txt",
+          "format": "txt",
+          "readability_status": "READABLE",
+          "text": "SHIPPING INSTRUCTION\nShipper: Alpha Paper Trading\nConsignee: Beta Office Supplies\nNotify: Beta Office Supplies\nPOL: Shanghai\nPOD: Melbourne\nContainer Count: 6\nGross Weight (KG): 131058"
+        },
+        "bl": {
+          "filename": "fixture_multi_mismatch_BL.txt",
+          "format": "txt",
+          "readability_status": "READABLE",
+          "text": "BILL OF LADING (DRAFT)\nShipper: Alpha Paper Trading\nConsignee: Beta Office Supplies\nNotify Party: Beta Office Supplies\nLoad Port: Ningbo\nPort of Discharge: Melbourne\nTotal Containers: 6\nGross Wt (kgs): 132058"
+        }
+      },
+      "expected": {
+        "status": "MISMATCH",
+        "review_reason": null,
+        "defect_fields": ["port_of_loading", "gross_weight_kg"],
+        "has_defect": true
+      }
+    },
+    {
+      "id": "missing_attachment",
+      "documents": {
+        "si": {
+          "filename": "fixture_missing_BL_SI.txt",
+          "format": "txt",
+          "readability_status": "READABLE",
+          "text": "SHIPPING INSTRUCTION\nShipper: Alpha Paper Trading\nConsignee: Beta Office Supplies\nPOL: Shanghai\nPOD: Melbourne\nContainer Count: 6\nGross Weight (KG): 131058"
+        },
+        "bl": null
+      },
+      "expected": {
+        "status": "NEEDS_REVIEW",
+        "review_reason": "missing_attachment",
+        "defect_fields": [],
+        "has_defect": false
+      }
+    },
+    {
+      "id": "wrong_document_type",
+      "documents": {
+        "si": {
+          "filename": "fixture_wrong_type_SI.txt",
+          "format": "txt",
+          "readability_status": "READABLE",
+          "text": "SHIPPING INSTRUCTION\nShipper: Alpha Paper Trading\nConsignee: Beta Office Supplies\nPOL: Shanghai\nPOD: Melbourne\nContainer Count: 6\nGross Weight (KG): 131058"
+        },
+        "bl": {
+          "filename": "fixture_wrong_type_BL.txt",
+          "format": "txt",
+          "readability_status": "READABLE",
+          "text": "COMMERCIAL INVOICE\nInvoice Number: INV-1001\nSeller: Alpha Paper Trading\nBuyer: Beta Office Supplies\nAmount Due: USD 25,000"
+        }
+      },
+      "expected": {
+        "status": "NEEDS_REVIEW",
+        "review_reason": "wrong_doc_type",
+        "defect_fields": [],
+        "has_defect": false
+      }
+    },
+    {
+      "id": "unreadable_file",
+      "documents": {
+        "si": {
+          "filename": "fixture_unreadable_SI.txt",
+          "format": "txt",
+          "readability_status": "READABLE",
+          "text": "SHIPPING INSTRUCTION\nShipper: Alpha Paper Trading\nConsignee: Beta Office Supplies\nPOL: Shanghai\nPOD: Melbourne\nContainer Count: 6\nGross Weight (KG): 131058"
+        },
+        "bl": {
+          "filename": "fixture_unreadable_BL.pdf",
+          "format": "pdf",
+          "readability_status": "UNREADABLE",
+          "text": null
+        }
+      },
+      "expected": {
+        "status": "NEEDS_REVIEW",
+        "review_reason": "unreadable",
+        "defect_fields": [],
+        "has_defect": false
+      }
+    },
+    {
+      "id": "missing_value",
+      "documents": {
+        "si": {
+          "filename": "fixture_missing_value_SI.txt",
+          "format": "txt",
+          "readability_status": "READABLE",
+          "text": "SHIPPING INSTRUCTION\nShipper: Alpha Paper Trading\nConsignee: Beta Office Supplies\nPOL: Shanghai\nPOD: Melbourne\nContainer Count: 6\nGross Weight (KG): TBA"
+        },
+        "bl": {
+          "filename": "fixture_missing_value_BL.txt",
+          "format": "txt",
+          "readability_status": "READABLE",
+          "text": "BILL OF LADING (DRAFT)\nShipper: Alpha Paper Trading\nConsignee: Beta Office Supplies\nPort of Loading: Shanghai\nPort of Discharge: Melbourne\nTotal Containers: 6\nGross Wt (kgs): 131058"
+        }
+      },
+      "expected": {
+        "status": "NEEDS_REVIEW",
+        "review_reason": "missing_value",
+        "defect_fields": [],
+        "has_defect": false
+      }
+    }
+  ]
+}
