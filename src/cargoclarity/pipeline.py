@@ -18,6 +18,7 @@ from .normalizers import normalize_field
 from .readers import read_attachment
 
 AI_CLASSIFICATION_THRESHOLD = 0.78
+AI_MIN_ACCEPTED_CLASSIFICATION_CONFIDENCE = 0.75
 
 
 def _inline_document(document: dict | None) -> DocumentReadResult | None:
@@ -65,9 +66,12 @@ def _ai_classification(record: dict, deterministic: ClassificationResult, adapte
             str(record.get("body") or ""),
             [str(item) for item in record.get("attachments") or []],
         )
+        ai_confidence = float(payload["confidence"])
+        if ai_confidence < AI_MIN_ACCEPTED_CLASSIFICATION_CONFIDENCE:
+            return deterministic
         return ClassificationResult(
             category=payload["category"],
-            confidence=float(payload["confidence"]),
+            confidence=ai_confidence,
             signals=[f"AI: {signal}" for signal in payload["signals"]],
             decided_by="AI",
             explanation=payload["explanation"],
@@ -136,7 +140,9 @@ def process_email_record(
     """Classify an email and compare attachments only for BL_COMPARISON records."""
     adapter = ai_adapter or AIAdapter()
     deterministic = classify_email(record)
+    calls_before_classification = len(adapter.calls)
     classification = _ai_classification(record, deterministic, adapter, use_ai)
+    classification_ai_called = len(adapter.calls) > calls_before_classification
     output = {
         "email_id": record.get("email_id"),
         "category": classification.category,
@@ -144,8 +150,8 @@ def process_email_record(
         "comparison": None,
         "ai_processing": {
             "enabled": bool(use_ai and adapter.enabled),
-            "used": False,
-            "fallback_active": bool(use_ai and not adapter.enabled),
+            "used": classification_ai_called,
+            "fallback_active": bool(use_ai and (not adapter.enabled or classification_ai_called and classification.decided_by == "RULE")),
             "calls": [],
         },
     }
@@ -158,6 +164,7 @@ def process_email_record(
             and (
                 not adapter.enabled
                 or any(call.validation_status == "FAILED" for call in adapter.calls)
+                or (classification_ai_called and classification.decided_by == "RULE")
             )
         )
         return output
@@ -190,5 +197,12 @@ def process_email_record(
     output["attachments"] = attachment_summaries
     output["comparison"] = report.to_dict()
     output["ai_processing"]["calls"] = [call.to_dict() for call in adapter.calls]
-    output["ai_processing"]["fallback_active"] = bool(use_ai and (not adapter.enabled or any(call.validation_status == "FAILED" for call in adapter.calls)))
+    output["ai_processing"]["fallback_active"] = bool(
+        use_ai
+        and (
+            not adapter.enabled
+            or any(call.validation_status == "FAILED" for call in adapter.calls)
+            or (classification_ai_called and classification.decided_by == "RULE")
+        )
+    )
     return output

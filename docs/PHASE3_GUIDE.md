@@ -76,7 +76,7 @@ pytest
 Expected result:
 
 ```text
-23 passed
+24 passed
 ```
 
 The Phase 3 tests verify that the adapter sends strict JSON Schema requests, validates valid responses, rejects non-null values without evidence, rejects unsupported categories, records provider/model/prompt metadata, and preserves a deterministic result when an AI response is malformed.
@@ -214,7 +214,9 @@ Run this low-confidence sample:
 cargoclarity email email_016 --use-ai
 ```
 
-`email_016` has a deterministic classification confidence below the Phase 3 AI threshold, so it is suitable for seeing a Gemini classification call. The pipeline uses deterministic classification first and calls Gemini only when confidence is low. A strong deterministic example may show no AI call even when `--use-ai` is present. This is intentional and avoids unnecessary provider cost.
+`email_016` has a deterministic classification confidence below the Phase 3 AI threshold, so it is suitable for seeing an AI classification call. The pipeline uses deterministic classification first and calls the configured provider only when confidence is low. A strong deterministic example may show no AI call even when `--use-ai` is present. This is intentional and avoids unnecessary provider cost.
+
+The pipeline accepts an AI classification only when the provider confidence is at least `0.75`. If a small local model returns valid JSON with lower confidence, CargoClarity records the validated call but keeps the deterministic category and marks `fallback_active` as `true`. This prevents a weak local model from changing the route to a wrong category.
 
 For document extraction, AI is only used when the deterministic document role is unknown or a required field is still missing. Existing deterministic values and evidence are not overwritten by AI output.
 
@@ -225,6 +227,21 @@ Inspect the following output properties:
 - `ai_processing.calls` lists operation, provider, model, prompt version, latency, and validation status.
 - `ai_processing.fallback_active` is `true` if the provider was unavailable or a call failed.
 - `comparison.status` still comes from the deterministic comparison engine.
+
+### Local Ollama option
+
+If Gemini Free Tier is unavailable, Ollama provides a no-API-cost local provider. Install Ollama from [ollama.com](https://ollama.com), run `ollama pull llama3.2:3b`, and keep `ollama serve` running. The local `.env` can then use:
+
+```text
+AI_PROVIDER=ollama
+AI_API_BASE=http://localhost:11434/v1
+AI_MODEL=llama3.2:3b
+GEMINI_API_KEY=
+AI_API_KEY=ollama
+AI_TIMEOUT_SECONDS=60
+```
+
+Run `cargoclarity ai-check` to verify schema-valid local output. A validated response does not automatically mean the model is trusted for the final route; the `0.75` acceptance gate and deterministic fallback still apply.
 
 ## Step 10 — Confirm malformed responses cannot create false mismatches
 

@@ -20,12 +20,12 @@ From the repository root on macOS or Linux:
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install -e '.[test]'
+python -m pip install -e '.[test,ai]'
 pytest
 cargoclarity fixtures
 ```
 
-Expected verification results are **23 passing tests** and **7/7 passing fixtures**.
+Expected verification results are **24 passing tests** and **7/7 passing fixtures**.
 
 Process one participant email with:
 
@@ -43,9 +43,9 @@ See [Phase 2 review and operation guide](docs/PHASE2_GUIDE.md) for exact command
 
 See [Phase 3 review and operation guide](docs/PHASE3_GUIDE.md) for optional AI configuration, mocked validation, live-call instructions, fallback behavior, and approval steps.
 
-Phase 3 is configured for Google Gemini through its OpenAI-compatible endpoint. Google currently documents a Free Tier for eligible models and projects; use the [official AI Studio API-key page](https://aistudio.google.com/apikey) and do not enable billing if you want to stay within free-tier usage.
+Phase 3 supports Google Gemini and local Ollama through the same OpenAI-compatible adapter. Google currently documents a Free Tier for eligible Gemini models and projects; use the [official AI Studio API-key page](https://aistudio.google.com/apikey) and do not enable billing if you want to stay within free-tier usage. Ollama runs locally without an API charge.
 
-The local `.env` file is created for development, ignored by Git, and loaded automatically. It contains a blank `GEMINI_API_KEY` until you add your key locally. Keep the real key only in that ignored file.
+The local `.env` file is created for development, ignored by Git, and loaded automatically. Its provider settings are local-only and are not committed. Keep any real key only in that ignored file.
 
 Check the optional AI configuration without sending a request when no key is configured:
 

@@ -118,6 +118,7 @@ def test_disabled_adapter_is_explicitly_degraded():
 
 
 def test_gemini_environment_defaults_are_free_tier_configuration(monkeypatch):
+    monkeypatch.setenv("CARGOCLARITY_DISABLE_DOTENV", "1")
     monkeypatch.delenv("AI_PROVIDER", raising=False)
     monkeypatch.delenv("AI_MODEL", raising=False)
     monkeypatch.delenv("AI_API_BASE", raising=False)
@@ -152,3 +153,32 @@ def test_pipeline_keeps_deterministic_result_when_ai_response_is_malformed(tmp_p
     assert result["classification"]["decided_by"] == "RULE"
     assert result["ai_processing"]["fallback_active"] is True
     assert result["ai_processing"]["calls"][0]["validation_status"] == "FAILED"
+
+
+def test_pipeline_keeps_deterministic_result_when_ai_confidence_is_low(tmp_path):
+    record = {
+        "email_id": "fixture_email",
+        "from": "ops@example.com",
+        "subject": "Please review shipment details",
+        "body": "The attached correspondence needs attention.",
+        "attachments": [],
+    }
+
+    def transport(**kwargs):
+        return json.dumps(
+            {
+                "category": "INVOICE_QUERY",
+                "confidence": 0.50,
+                "signals": ["weak local-model signal"],
+                "explanation": "Low-confidence classification.",
+            }
+        )
+
+    adapter = AIAdapter(settings=_settings(), transport=transport)
+    result = process_email_record(record, tmp_path, use_ai=True, ai_adapter=adapter)
+
+    assert result["category"] == "GENERAL"
+    assert result["classification"]["decided_by"] == "RULE"
+    assert result["ai_processing"]["used"] is True
+    assert result["ai_processing"]["fallback_active"] is True
+    assert result["ai_processing"]["calls"][0]["validation_status"] == "VALIDATED"
