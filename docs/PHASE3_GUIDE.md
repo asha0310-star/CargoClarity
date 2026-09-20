@@ -63,7 +63,7 @@ If the environment already exists, refresh the package after pulling or receivin
 python -m pip install -e '.[test,ai]'
 ```
 
-The `ai` extra installs the OpenAI-compatible Python client. The base package still contains `jsonschema`, so mocked schema tests do not need a provider key.
+The `ai` extra installs the OpenAI-compatible Python client. The base package also installs `python-dotenv`, so the local `.env` file is loaded automatically. Mocked schema tests do not need a provider key.
 
 ## Step 3 — Run every automated test
 
@@ -101,10 +101,10 @@ Phase 3 must not change the Phase 2 comparison outcomes. The AI adapter is an as
 
 ## Step 5 — Verify fallback with no API key
 
-This command explicitly removes common API-key variables for this one invocation:
+This command explicitly bypasses the local `.env` file and removes common API-key variables for this one invocation:
 
 ```bash
-env -u AI_API_KEY -u OPENAI_API_KEY -u AI_API_BASE -u OPENAI_API_BASE \
+CARGOCLARITY_DISABLE_DOTENV=1 env -u GEMINI_API_KEY -u AI_API_KEY -u OPENAI_API_KEY -u AI_API_BASE -u OPENAI_API_BASE \
   cargoclarity ai-check
 ```
 
@@ -120,7 +120,7 @@ Expected output contains:
 Now verify that a normal email remains processable when the AI flag is requested but no provider is configured:
 
 ```bash
-env -u AI_API_KEY -u OPENAI_API_KEY -u AI_API_BASE -u OPENAI_API_BASE \
+CARGOCLARITY_DISABLE_DOTENV=1 env -u GEMINI_API_KEY -u AI_API_KEY -u OPENAI_API_KEY -u AI_API_BASE -u OPENAI_API_BASE \
   cargoclarity email email_001 --use-ai \
   | jq '{category, comparison: .comparison.status, ai_processing}'
 ```
@@ -131,20 +131,26 @@ The comparison should still be `OK`. `ai_processing.fallback_active` should be `
 
 This is the only step that requires an account outside the repository. Open the official [Google AI Studio API-key page](https://aistudio.google.com/apikey), sign in, and create an API key in a project that is shown as **Free Tier**. Google documents that new accounts begin on the Free Tier for eligible models, but the available models and request limits vary by project. Do not click **Set up billing**, add a payment method, or upgrade the project if you want this test to remain no-cost. If AI Studio only offers a paid project or asks you to enable billing, stop and do not continue.
 
-After copying the key, return to the same Terminal window and run the following commands. Replace only the text after `GEMINI_API_KEY=` with your key; do not include spaces around the equals sign:
+After copying the key, the project’s local `.env` file is ready. Open it in the macOS text editor:
 
 ```bash
-export AI_PROVIDER=gemini
-export AI_MODEL=gemini-3.8-flash
-export AI_API_BASE=https://generativelanguage.googleapis.com/v1beta/openai/
-export GEMINI_API_KEY='PASTE_YOUR_GEMINI_KEY_HERE'
+open -e .env
 ```
 
-The application reads environment variables from the current Terminal session. It does not automatically read `.env.example`, and you should not put the real key into that file. The adapter also accepts `AI_API_KEY`, but `GEMINI_API_KEY` is clearer and takes priority for Gemini.
+Replace only the empty value after `GEMINI_API_KEY=` with your key; do not include spaces around the equals sign. The active settings should look like this:
+
+```bash
+AI_PROVIDER=gemini
+AI_MODEL=gemini-3.8-flash
+AI_API_BASE=https://generativelanguage.googleapis.com/v1beta/openai/
+GEMINI_API_KEY=PASTE_YOUR_GEMINI_KEY_HERE
+```
+
+Save and close the file. CargoClarity now loads `.env` automatically when you run a command. You should not put the real key into `.env.example`. The adapter also accepts `AI_API_KEY`, but `GEMINI_API_KEY` is clearer and takes priority for Gemini.
 
 Google’s official documentation says Gemini supports this OpenAI-compatible endpoint and structured JSON output [7][8]. The free tier is limited: requests are subject to model-specific RPM, TPM, and RPD limits, and the free-tier terms say prompts and responses may be used to improve Google products [5]. Use only the provided synthetic participant data for this test.
 
-When you finish testing, clear the variables:
+When you finish testing, remove the key from `.env` or replace the line with `GEMINI_API_KEY=`. You can also clear any variables from the current shell:
 
 ```bash
 unset GEMINI_API_KEY AI_API_BASE AI_MODEL AI_PROVIDER

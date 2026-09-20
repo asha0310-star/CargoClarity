@@ -45,6 +45,8 @@ See [Phase 3 review and operation guide](docs/PHASE3_GUIDE.md) for optional AI c
 
 Phase 3 is configured for Google Gemini through its OpenAI-compatible endpoint. Google currently documents a Free Tier for eligible models and projects; use the [official AI Studio API-key page](https://aistudio.google.com/apikey) and do not enable billing if you want to stay within free-tier usage.
 
+The local `.env` file is created for development, ignored by Git, and loaded automatically. It contains a blank `GEMINI_API_KEY` until you add your key locally. Keep the real key only in that ignored file.
+
 Check the optional AI configuration without sending a request when no key is configured:
 
 ```bash

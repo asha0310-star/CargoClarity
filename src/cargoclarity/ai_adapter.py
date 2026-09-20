@@ -43,6 +43,10 @@ class AISettings:
 
     @classmethod
     def from_env(cls) -> "AISettings":
+        from dotenv import load_dotenv
+
+        if os.getenv("CARGOCLARITY_DISABLE_DOTENV") != "1":
+            load_dotenv()
         provider = os.getenv("AI_PROVIDER", "gemini")
         model = os.getenv("AI_MODEL", "gemini-3.8-flash")
         api_key = os.getenv("GEMINI_API_KEY") or os.getenv("AI_API_KEY") or os.getenv("OPENAI_API_KEY")
