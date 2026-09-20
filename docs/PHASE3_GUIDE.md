@@ -6,7 +6,7 @@ Phase 3 adds one optional cloud-AI adapter behind a strict interface. The adapte
 
 The provider response must be JSON that matches a strict schema. Malformed JSON, unsupported categories, missing required properties, invalid confidence values, or missing evidence are rejected. When the provider is unavailable or its response is rejected, the Phase 2 deterministic path continues and the output records that fallback was active.
 
-The selected default model is `gpt-5-mini`. The live model catalog available during implementation confirmed this model. The project uses the OpenAI-compatible Chat Completions contract with strict JSON Schema output.
+The selected provider is Google Gemini through its OpenAI-compatible endpoint. The default model is `gemini-3.8-flash`, which Google currently lists with Free Tier input and output pricing [5]. Free-tier availability and rate limits are project- and model-specific [6][9], so verify the active tier in Google AI Studio before making requests. The project uses strict JSON output plus application-side validation.
 
 ## What changed
 
@@ -76,7 +76,7 @@ pytest
 Expected result:
 
 ```text
-22 passed
+23 passed
 ```
 
 The Phase 3 tests verify that the adapter sends strict JSON Schema requests, validates valid responses, rejects non-null values without evidence, rejects unsupported categories, records provider/model/prompt metadata, and preserves a deterministic result when an AI response is malformed.
@@ -127,31 +127,30 @@ env -u AI_API_KEY -u OPENAI_API_KEY -u AI_API_BASE -u OPENAI_API_BASE \
 
 The comparison should still be `OK`. `ai_processing.fallback_active` should be `true` because the requested provider is unavailable.
 
-## Step 6 — Understand the environment variables
+## Step 6 — Create a Gemini Free Tier key
 
-The template is [`.env.example`](../.env.example). The application reads environment variables; it does not automatically read a `.env` file. For a temporary terminal session, set variables with `export` commands.
+This is the only step that requires an account outside the repository. Open the official [Google AI Studio API-key page](https://aistudio.google.com/apikey), sign in, and create an API key in a project that is shown as **Free Tier**. Google documents that new accounts begin on the Free Tier for eligible models, but the available models and request limits vary by project. Do not click **Set up billing**, add a payment method, or upgrade the project if you want this test to remain no-cost. If AI Studio only offers a paid project or asks you to enable billing, stop and do not continue.
 
-For an OpenAI-compatible provider, set:
-
-```bash
-export AI_PROVIDER=openai-compatible
-export AI_MODEL=gpt-5-mini
-export AI_API_KEY='YOUR_KEY_HERE'
-```
-
-If the provider is not the default OpenAI endpoint, also set its compatible base URL:
+After copying the key, return to the same Terminal window and run the following commands. Replace only the text after `GEMINI_API_KEY=` with your key; do not include spaces around the equals sign:
 
 ```bash
-export AI_API_BASE='https://YOUR_PROVIDER.example/v1'
+export AI_PROVIDER=gemini
+export AI_MODEL=gemini-3.8-flash
+export AI_API_BASE=https://generativelanguage.googleapis.com/v1beta/openai/
+export GEMINI_API_KEY='PASTE_YOUR_GEMINI_KEY_HERE'
 ```
 
-Never paste a real key into Git, README files, test fixtures, screenshots, issue comments, or chat. Do not replace `.env.example` with a populated file. When you finish testing, close the terminal or clear the variables:
+The application reads environment variables from the current Terminal session. It does not automatically read `.env.example`, and you should not put the real key into that file. The adapter also accepts `AI_API_KEY`, but `GEMINI_API_KEY` is clearer and takes priority for Gemini.
+
+Google’s official documentation says Gemini supports this OpenAI-compatible endpoint and structured JSON output [7][8]. The free tier is limited: requests are subject to model-specific RPM, TPM, and RPD limits, and the free-tier terms say prompts and responses may be used to improve Google products [5]. Use only the provided synthetic participant data for this test.
+
+When you finish testing, clear the variables:
 
 ```bash
-unset AI_API_KEY AI_API_BASE AI_MODEL AI_PROVIDER
+unset GEMINI_API_KEY AI_API_BASE AI_MODEL AI_PROVIDER
 ```
 
-The key is not required to review or approve the Phase 3 implementation because the automated tests use a mock transport.
+The key is not required to review the implementation because the automated tests use a mock transport. It is required only for the one live Gemini check in the next step.
 
 ## Step 7 — Install the optional live-provider client
 
@@ -163,7 +162,7 @@ python -m pip install -e '.[test,ai]'
 
 Do not run a live call against a provider until you have configured the environment variables in Step 6.
 
-## Step 8 — Make one bounded live AI check
+## Step 8 — Make one bounded live Gemini check
 
 After setting the variables, run:
 
@@ -187,8 +186,8 @@ A successful response should contain:
   "calls": [
     {
       "operation": "classification",
-      "provider": "openai-compatible",
-      "model": "gpt-5-mini",
+      "provider": "gemini",
+      "model": "gemini-3.8-flash",
       "validation_status": "VALIDATED"
     }
   ]
@@ -201,13 +200,13 @@ If the provider rejects the request, times out, or returns malformed JSON, the c
 
 ## Step 9 — Run the normal pipeline with AI enabled
 
-Run:
+Run this low-confidence sample:
 
 ```bash
-cargoclarity email email_033 --use-ai
+cargoclarity email email_016 --use-ai
 ```
 
-The pipeline uses deterministic classification first. It calls AI only when the deterministic confidence is below the configured threshold. Therefore, a strong deterministic example may show no AI call even when `--use-ai` is present. This is intentional and avoids unnecessary provider cost.
+`email_016` has a deterministic classification confidence below the Phase 3 AI threshold, so it is suitable for seeing a Gemini classification call. The pipeline uses deterministic classification first and calls Gemini only when confidence is low. A strong deterministic example may show no AI call even when `--use-ai` is present. This is intentional and avoids unnecessary provider cost.
 
 For document extraction, AI is only used when the deterministic document role is unknown or a required field is still missing. Existing deterministic values and evidence are not overwritten by AI output.
 
@@ -288,7 +287,7 @@ Confirm these design rules in the source:
 
 Approve this phase only when:
 
-- `pytest` reports 22 passing tests.
+- `pytest` reports 23 passing tests.
 - `cargoclarity fixtures` reports 7/7 passing fixtures.
 - The no-key fallback check succeeds.
 - `cargoclarity ai-check` behaves as expected for your configured or unconfigured environment.
@@ -312,3 +311,8 @@ Phase 4 will build the smallest backend workflow around the existing core: list 
 [2]: ./PHASE2_GUIDE.md "CargoClarity Phase 2 review and operation guide"
 [3]: ./CargoClarity — API Specification.md "CargoClarity API Specification"
 [4]: ./CargoClarity — Security & Privacy.md "CargoClarity Security and Privacy"
+[5]: https://ai.google.dev/gemini-api/docs/pricing "Google Gemini API pricing and Free Tier"
+[6]: https://ai.google.dev/gemini-api/docs/billing "Google Gemini API billing and usage tiers"
+[7]: https://ai.google.dev/gemini-api/docs/openai "Google Gemini OpenAI compatibility"
+[8]: https://ai.google.dev/gemini-api/docs/structured-output "Google Gemini structured output"
+[9]: https://ai.google.dev/gemini-api/docs/rate-limits "Google Gemini API rate limits"

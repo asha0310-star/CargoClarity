@@ -117,6 +117,22 @@ def test_disabled_adapter_is_explicitly_degraded():
     assert adapter.calls == []
 
 
+def test_gemini_environment_defaults_are_free_tier_configuration(monkeypatch):
+    monkeypatch.delenv("AI_PROVIDER", raising=False)
+    monkeypatch.delenv("AI_MODEL", raising=False)
+    monkeypatch.delenv("AI_API_BASE", raising=False)
+    monkeypatch.delenv("AI_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.setenv("GEMINI_API_KEY", "test-gemini-key")
+
+    settings = AISettings.from_env()
+
+    assert settings.provider == "gemini"
+    assert settings.model == "gemini-3.8-flash"
+    assert settings.api_base == "https://generativelanguage.googleapis.com/v1beta/openai/"
+    assert settings.enabled is True
+
+
 def test_pipeline_keeps_deterministic_result_when_ai_response_is_malformed(tmp_path):
     record = {
         "email_id": "fixture_email",

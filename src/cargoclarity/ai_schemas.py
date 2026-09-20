@@ -5,7 +5,7 @@ from .models import CANONICAL_FIELDS, CATEGORIES
 
 
 def _nullable_string():
-    return {"anyOf": [{"type": "string"}, {"type": "null"}]}
+    return {"type": ["string", "null"]}
 
 
 FIELD_SCHEMA = {
@@ -17,19 +17,6 @@ FIELD_SCHEMA = {
     },
     "required": ["raw_value", "evidence_excerpt", "confidence"],
     "additionalProperties": False,
-    "allOf": [
-        {
-            "if": {
-                "properties": {"raw_value": {"type": "string"}},
-                "required": ["raw_value"],
-            },
-            "then": {
-                "properties": {
-                    "evidence_excerpt": {"type": "string", "minLength": 1},
-                },
-            },
-        }
-    ],
 }
 
 EXTRACTION_SCHEMA = {

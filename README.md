@@ -25,7 +25,7 @@ pytest
 cargoclarity fixtures
 ```
 
-Expected verification results are **22 passing tests** and **7/7 passing fixtures**.
+Expected verification results are **23 passing tests** and **7/7 passing fixtures**.
 
 Process one participant email with:
 
@@ -42,6 +42,8 @@ python tools/run_phase2_smoke.py
 See [Phase 2 review and operation guide](docs/PHASE2_GUIDE.md) for exact commands, expected results, interpretation, and approval steps.
 
 See [Phase 3 review and operation guide](docs/PHASE3_GUIDE.md) for optional AI configuration, mocked validation, live-call instructions, fallback behavior, and approval steps.
+
+Phase 3 is configured for Google Gemini through its OpenAI-compatible endpoint. Google currently documents a Free Tier for eligible models and projects; use the [official AI Studio API-key page](https://aistudio.google.com/apikey) and do not enable billing if you want to stay within free-tier usage.
 
 Check the optional AI configuration without sending a request when no key is configured:
 

@@ -10,11 +10,13 @@ from __future__ import annotations
 import json
 import os
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Callable
 
 from .ai_schemas import CLASSIFICATION_SCHEMA, EXTRACTION_SCHEMA, response_format
-from .models import CANONICAL_FIELDS, CATEGORIES
+from .models import CANONICAL_FIELDS
+
+GEMINI_OPENAI_BASE = "https://generativelanguage.googleapis.com/v1beta/openai/"
 
 
 class AIAdapterError(RuntimeError):
@@ -31,8 +33,8 @@ class AISchemaError(AIAdapterError):
 
 @dataclass
 class AISettings:
-    provider: str = "openai-compatible"
-    model: str = "gpt-5-mini"
+    provider: str = "gemini"
+    model: str = "gemini-3.8-flash"
     api_key: str | None = None
     api_base: str | None = None
     timeout_seconds: float = 30.0
@@ -41,10 +43,12 @@ class AISettings:
 
     @classmethod
     def from_env(cls) -> "AISettings":
-        api_key = os.getenv("AI_API_KEY") or os.getenv("OPENAI_API_KEY")
+        provider = os.getenv("AI_PROVIDER", "gemini")
+        model = os.getenv("AI_MODEL", "gemini-3.8-flash")
+        api_key = os.getenv("GEMINI_API_KEY") or os.getenv("AI_API_KEY") or os.getenv("OPENAI_API_KEY")
         api_base = os.getenv("AI_API_BASE") or os.getenv("OPENAI_API_BASE")
-        provider = os.getenv("AI_PROVIDER", "openai-compatible")
-        model = os.getenv("AI_MODEL", "gpt-5-mini")
+        if provider.casefold() == "gemini" and not api_base:
+            api_base = GEMINI_OPENAI_BASE
         enabled = bool(api_key and provider and model)
         return cls(
             provider=provider,
@@ -149,6 +153,8 @@ class AIAdapter:
                 raise AISchemaError("AI response was empty")
             payload = json.loads(content)
             self._validate_schema(payload, schema)
+            if operation == "extraction":
+                self._validate_extraction_semantics(payload)
             self.calls.append(self._record(operation, started, "VALIDATED"))
             return payload
         except AIAdapterError as exc:
@@ -180,6 +186,12 @@ class AIAdapter:
         if errors:
             location = ".".join(str(part) for part in errors[0].path) or "root"
             raise AISchemaError(f"Invalid AI response at {location}: {errors[0].message}")
+
+    @staticmethod
+    def _validate_extraction_semantics(payload: dict) -> None:
+        for field_name, field in payload["fields"].items():
+            if field["raw_value"] is not None and not field["evidence_excerpt"]:
+                raise AISchemaError(f"AI extraction field {field_name} has a value without evidence")
 
     def classify(self, subject: str, body: str, attachment_names: list[str]) -> dict:
         system = (
