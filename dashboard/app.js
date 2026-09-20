@@ -304,8 +304,12 @@ function showBatch(batch) {
 
 async function loadReviewQueue() {
   try {
-    const data = await api("/emails?needs_review=true&page=1&page_size=100");
-    state.reviewQueue = data.items || [];
+    const firstPage = await api("/emails?needs_review=true&page=1&page_size=100");
+    const pages = Math.ceil((firstPage.total || 0) / 100);
+    const remaining = pages > 1
+      ? await Promise.all(Array.from({ length: pages - 1 }, (_, index) => api(`/emails?needs_review=true&page=${index + 2}&page_size=100`)))
+      : [];
+    state.reviewQueue = [firstPage, ...remaining].flatMap((page) => page.items || []);
     renderReviewList();
     if (!state.email || state.email.status !== "NEEDS_REVIEW") {
       if (state.reviewQueue.length) await openCase(state.reviewQueue[0].id, "review");
