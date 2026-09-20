@@ -6,7 +6,7 @@ CargoClarity is an explainable shipping-document verification MVP. It classifies
 
 ## Current status
 
-**Phase 0** established the repository and scope. **Phase 1** inspected the participant dataset and created seven local regression fixtures. **Phase 2** implements the deterministic core. **Phase 3** adds an optional schema-validated AI adapter with deterministic fallback. **Phase 4** adds the local FastAPI backend workflow. The dashboard, production persistence, authentication, and deployment are later phases.
+**Phase 0** established the repository and scope. **Phase 1** inspected the participant dataset and created seven local regression fixtures. **Phase 2** implements the deterministic core. **Phase 3** adds an optional schema-validated AI adapter with deterministic fallback. **Phase 4** adds the local FastAPI backend workflow. **Phase 5** adds the reviewer dashboard served from the same backend. Production persistence, authentication, audit screens, and deployment are later phases.
 
 ## Phase 2 capabilities
 
@@ -25,7 +25,7 @@ pytest
 cargoclarity fixtures
 ```
 
-Expected verification results are **24 passing tests** and **7/7 passing fixtures**.
+Expected verification results are **30 passing tests** and **7/7 passing fixtures**.
 
 Process one participant email with:
 
@@ -45,6 +45,8 @@ See [Phase 3 review and operation guide](docs/PHASE3_GUIDE.md) for optional AI c
 
 See [Phase 4 backend workflow guide](docs/PHASE4_GUIDE.md) for API setup, endpoint walkthroughs, review actions, retry, export, error handling, and approval steps.
 
+See [Phase 5 dashboard guide](docs/PHASE5_GUIDE.md) for the local dashboard setup, demo-case preparation, filters, comparison evidence, review actions, reports, export, and approval steps.
+
 Phase 3 supports Google Gemini and local Ollama through the same OpenAI-compatible adapter. Google currently documents a Free Tier for eligible Gemini models and projects; use the [official AI Studio API-key page](https://aistudio.google.com/apikey) and do not enable billing if you want to stay within free-tier usage. Ollama runs locally without an API charge.
 
 The local `.env` file is created for development, ignored by Git, and loaded automatically. Its provider settings are local-only and are not committed. Keep any real key only in that ignored file.
@@ -62,6 +64,8 @@ cargoclarity-api
 ```
 
 Then check `http://127.0.0.1:8000/api/v1/health`.
+
+Open the reviewer dashboard at `http://127.0.0.1:8000/dashboard/`.
 
 ## Repository layout
 

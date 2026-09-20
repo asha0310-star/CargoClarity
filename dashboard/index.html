@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#102a43" />
+    <title>CargoClarity — Operations Console</title>
+    <link rel="stylesheet" href="/dashboard/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Primary navigation">
+        <div class="brand-lockup">
+          <div class="brand-mark">CC</div>
+          <div>
+            <strong>CargoClarity</strong>
+            <span>Document assurance</span>
+          </div>
+        </div>
+        <div class="workspace-chip"><span class="status-dot"></span> Demo workspace <span class="chip-caret">⌄</span></div>
+        <nav class="nav-stack">
+          <button class="nav-item active" data-view="inbox"><span class="nav-icon">▤</span><span>Inbox</span><span class="nav-count" id="nav-inbox-count">520</span></button>
+          <button class="nav-item" data-view="review"><span class="nav-icon">◈</span><span>Review queue</span><span class="nav-count amber" id="nav-review-count">0</span></button>
+          <button class="nav-item" data-view="reports"><span class="nav-icon">▥</span><span>Reports</span></button>
+          <button class="nav-item disabled" type="button" title="Audit history arrives in Phase 6"><span class="nav-icon">◷</span><span>Audit log</span><span class="nav-soon">Soon</span></button>
+          <button class="nav-item disabled" type="button" title="Workspace settings arrive in a later phase"><span class="nav-icon">⚙</span><span>Settings</span><span class="nav-soon">Soon</span></button>
+        </nav>
+        <div class="sidebar-footer">
+          <div class="health-row"><span class="status-dot green"></span><span id="sidebar-health">API connected</span></div>
+          <span class="version-label">Phase 5 · local build</span>
+        </div>
+      </aside>
+
+      <main class="main-area">
+        <header class="topbar">
+          <div class="breadcrumb"><span>Operations</span><span class="crumb-separator">/</span><strong id="breadcrumb-current">Inbox</strong></div>
+          <div class="topbar-actions">
+            <span class="sync-label" id="last-sync">Not synced</span>
+            <button class="icon-button" id="refresh-button" aria-label="Refresh data" title="Refresh data">↻</button>
+            <button class="avatar-button" aria-label="Demo reviewer">DR</button>
+          </div>
+        </header>
+
+        <div class="page-wrap">
+          <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+          <section class="view active" id="view-inbox" data-view-panel="inbox">
+            <div class="page-heading">
+              <div>
+                <p class="eyebrow">Shipment verification</p>
+                <h1>Inbox</h1>
+                <p class="lede">Triage document requests, focus on exceptions, and keep every decision explainable.</p>
+              </div>
+              <div class="heading-actions">
+                <button class="button secondary" id="prepare-demo-button">Prepare demo cases</button>
+                <button class="button primary" id="process-selected-top" disabled>Process selected</button>
+              </div>
+            </div>
+
+            <div class="metric-grid" aria-label="Inbox summary">
+              <article class="metric-card"><span class="metric-label">Total messages</span><strong id="metric-total">—</strong><span class="metric-note">Participant inbox</span></article>
+              <article class="metric-card"><span class="metric-label">Document checks</span><strong id="metric-document">—</strong><span class="metric-note">BL comparison requests</span></article>
+              <article class="metric-card alert"><span class="metric-label">Needs attention</span><strong id="metric-review">—</strong><span class="metric-note">Review before release</span></article>
+              <article class="metric-card danger"><span class="metric-label">Confirmed mismatches</span><strong id="metric-mismatch">—</strong><span class="metric-note">Defects found by rules</span></article>
+            </div>
+
+            <div class="panel inbox-panel">
+              <div class="panel-heading">
+                <div><h2>Message queue</h2><p id="inbox-caption">Loading the participant inbox…</p></div>
+                <span class="table-selection" id="selection-label">No case selected</span>
+              </div>
+              <div class="filter-bar">
+                <label class="search-field"><span aria-hidden="true">⌕</span><input id="search-input" type="search" placeholder="Search subject, sender, or email ID" /></label>
+                <label class="filter-select"><span class="sr-only">Category</span><select id="category-filter"><option value="">All categories</option><option value="BL_COMPARISON">BL comparison</option><option value="SI_REQUEST">SI request</option><option value="INVOICE_QUERY">Invoice query</option><option value="GENERAL">General</option><option value="SPAM">Spam</option></select></label>
+                <label class="filter-select"><span class="sr-only">Status</span><select id="status-filter"><option value="">All statuses</option><option value="OK">OK</option><option value="MISMATCH">Mismatch</option><option value="NEEDS_REVIEW">Needs review</option></select></label>
+                <label class="filter-select"><span class="sr-only">Review state</span><select id="review-filter"><option value="">Any review state</option><option value="true">Needs review</option><option value="false">No review needed</option></select></label>
+              </div>
+              <div class="table-scroll">
+                <table class="inbox-table">
+                  <thead><tr><th scope="col">Email</th><th scope="col">Subject</th><th scope="col">Category</th><th scope="col">Status</th><th scope="col">Attachments</th><th scope="col">Updated</th><th scope="col"><span class="sr-only">Open</span></th></tr></thead>
+                  <tbody id="inbox-table-body"><tr><td colspan="7"><div class="loading-state"><span class="spinner"></span> Loading cases…</div></td></tr></tbody>
+                </table>
+              </div>
+              <div class="pagination-row"><span id="pagination-label">—</span><div><button class="page-button" id="prev-page" disabled>← Previous</button><button class="page-button" id="next-page" disabled>Next →</button></div></div>
+            </div>
+          </section>
+
+          <section class="view" id="view-comparison" data-view-panel="comparison">
+            <div class="page-heading compact"><div><button class="back-link" data-view="inbox">← Back to inbox</button><p class="eyebrow">Comparison workspace</p><h1 id="comparison-title">Select a case</h1><p class="lede" id="comparison-subtitle">Open a case from the inbox to inspect the evidence.</p></div><div class="heading-actions" id="comparison-actions"></div></div>
+            <div id="comparison-content"><div class="empty-card"><div class="empty-icon">⌁</div><h2>No case selected</h2><p>Choose a message from the inbox to see the side-by-side document decision.</p><button class="button primary" data-view="inbox">Open inbox</button></div></div>
+          </section>
+
+          <section class="view" id="view-review" data-view-panel="review">
+            <div class="page-heading compact"><div><button class="back-link" data-view="inbox">← Back to inbox</button><p class="eyebrow">Human review</p><h1>Review queue</h1><p class="lede">Resolve uncertainty only after reading the reason and source evidence.</p></div><div class="heading-actions"><button class="button secondary" id="review-refresh">Refresh queue</button></div></div>
+            <div id="review-content"><div class="empty-card"><div class="empty-icon">◈</div><h2>No case selected</h2><p>Use the Needs attention metric or open a review case from the inbox.</p><button class="button primary" id="open-first-review">Find a review case</button></div></div>
+          </section>
+
+          <section class="view" id="view-reports" data-view-panel="reports">
+            <div class="page-heading"><div><p class="eyebrow">Operational quality</p><h1>Reports</h1><p class="lede">A compact view of routing health, document outcomes, and review load.</p></div><button class="button primary" id="export-button">Download evaluation JSON</button></div>
+            <div id="reports-content"><div class="loading-state"><span class="spinner"></span> Loading report…</div></div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <div class="drawer-backdrop" id="drawer-backdrop" hidden></div>
+    <aside class="evidence-drawer" id="evidence-drawer" aria-labelledby="drawer-title" aria-hidden="true">
+      <div class="drawer-header"><div><p class="eyebrow">Source evidence</p><h2 id="drawer-title">Field evidence</h2></div><button class="close-button" id="close-drawer" aria-label="Close evidence">×</button></div>
+      <div id="drawer-content" class="drawer-content"></div>
+    </aside>
+
+    <script src="/dashboard/app.js" defer></script>
+  </body>
+</html>

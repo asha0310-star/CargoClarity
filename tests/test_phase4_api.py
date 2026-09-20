@@ -156,3 +156,19 @@ def test_export_rejects_unsupported_format(client):
     response = client.get("/api/v1/reports/export?format=csv")
     assert response.status_code == 400
     assert response.json()["error"]["code"] == "UNSUPPORTED_FORMAT"
+
+
+def test_phase5_dashboard_is_served_same_origin(client):
+    page = client.get("/dashboard/")
+    assert page.status_code == 200
+    assert "CargoClarity" in page.text
+    assert "/dashboard/app.js" in page.text
+    assert "/dashboard/styles.css" in page.text
+
+    script = client.get("/dashboard/app.js")
+    styles = client.get("/dashboard/styles.css")
+    assert script.status_code == 200
+    assert styles.status_code == 200
+    assert "Prepare demo cases" in script.text
+    assert "View evidence" in script.text
+    assert ".status-pill.review" in styles.text

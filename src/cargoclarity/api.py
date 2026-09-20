@@ -9,6 +9,7 @@ from typing import Any
 from fastapi import BackgroundTasks, FastAPI, Query, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from .api_schemas import IngestRequest, ProcessRequest, ReviewRequest
 from .api_store import ApiStore, NotFoundError, StoreError, UnsafeAttachmentError
@@ -43,7 +44,7 @@ def create_app(
 ) -> FastAPI:
     app = FastAPI(
         title="CargoClarity API",
-        version="0.3.0",
+        version="0.4.0",
         description="Explainable shipping-document verification workflow API",
     )
     app.state.store = ApiStore(
@@ -51,6 +52,9 @@ def create_app(
         state_path=state_path if state_path is not None else _default_state_path(),
         preload=preload,
     )
+    dashboard_dir = Path(__file__).resolve().parents[2] / "dashboard"
+    if dashboard_dir.exists():
+        app.mount("/dashboard", StaticFiles(directory=dashboard_dir, html=True), name="dashboard")
 
     @app.exception_handler(RequestValidationError)
     async def validation_error_handler(request: Request, exc: RequestValidationError):
